@@ -1,0 +1,24 @@
+logs
+tmp
+
+# vim
+.*.sw[a-z]
+*.un~
+Session.vim
+
+# OSX
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+*.swp
+*.log
+*.exe
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
