@@ -6,9 +6,9 @@ import (
 	"nacos_person/pb/person"
 	"net"
 
-	"github.com/nacos-group/nacos-sdk-go/clients"
-	"github.com/nacos-group/nacos-sdk-go/common/constant"
-	"github.com/nacos-group/nacos-sdk-go/vo"
+	"github.com/nacos-group/nacos-sdk-go/v2/clients"
+	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
+	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 	"google.golang.org/grpc"
 )
 
@@ -32,7 +32,7 @@ func main() {
 	person.RegisterHelloServer(grpcServer, new(Children))
 
 	// 3.设置监听, 指定 IP/port
-	listener, err := net.Listen("tcp", "192.168.66.146:8800")
+	listener, err := net.Listen("tcp", "192.168.66.145:8800")
 	if err != nil {
 		fmt.Println("Listen err:", err)
 		return
@@ -60,7 +60,7 @@ func RegisterNacos() {
 	// 至少一个ServerConfig
 	serverConfigs := []constant.ServerConfig{
 		{
-			IpAddr:      "192.168.66.148",
+			IpAddr:      "192.168.66.146",
 			ContextPath: "/nacos",
 			Port:        8848,
 			Scheme:      "http",
@@ -78,13 +78,13 @@ func RegisterNacos() {
 		fmt.Println("clients.NewNamingClient err,", err)
 	}
 	success, err := namingClient.RegisterInstance(vo.RegisterInstanceParam{
-		Ip:          "192.168.66.146",
+		Ip:          "192.168.66.145",
 		Port:        8800,
-		ServiceName: "hello123",
+		ServiceName: "demo.go",
 		Weight:      10,
-		//Enable:      true,
-		//Healthy:     true,
-		//Ephemeral:   true,
+		Enable:      true,
+		Healthy:     true,
+		Ephemeral:   true,
 		Metadata:    map[string]string{"idc": "shanghai"},
 		ClusterName: "cluster-a", // 默认值DEFAULT
 		GroupName:   "group-a",   // 默认值DEFAULT_GROUP
