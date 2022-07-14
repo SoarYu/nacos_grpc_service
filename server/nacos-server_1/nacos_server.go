@@ -32,7 +32,7 @@ func main() {
 	person.RegisterHelloServer(grpcServer, new(Children))
 
 	// 3.设置监听, 指定 IP/port
-	listener, err := net.Listen("tcp", "192.168.66.145:8800")
+	listener, err := net.Listen("tcp", "192.168.66.146:8461")
 	if err != nil {
 		fmt.Println("Listen err:", err)
 		return
@@ -60,7 +60,7 @@ func RegisterNacos() {
 	// 至少一个ServerConfig
 	serverConfigs := []constant.ServerConfig{
 		{
-			IpAddr:      "192.168.66.146",
+			IpAddr:      "47.115.216.190",
 			ContextPath: "/nacos",
 			Port:        8848,
 			Scheme:      "http",
@@ -78,16 +78,16 @@ func RegisterNacos() {
 		fmt.Println("clients.NewNamingClient err,", err)
 	}
 	success, err := namingClient.RegisterInstance(vo.RegisterInstanceParam{
-		Ip:          "192.168.66.145",
-		Port:        8800,
+		Ip:          "47.115.216.190",
+		Port:        8461,
 		ServiceName: "demo.go",
 		Weight:      10,
 		Enable:      true,
 		Healthy:     true,
 		Ephemeral:   true,
 		Metadata:    map[string]string{"idc": "shanghai"},
-		ClusterName: "cluster-a", // 默认值DEFAULT
-		GroupName:   "group-a",   // 默认值DEFAULT_GROUP
+		ClusterName: "cluster-146", // 默认值DEFAULT
+		GroupName:   "group-146",   // 默认值DEFAULT_GROUP
 	})
 	if !success {
 		return

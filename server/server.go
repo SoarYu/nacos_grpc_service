@@ -8,6 +8,9 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 	"nacos_person/pb/person"
 	"net"
+	"strconv"
+	"sync"
+	"time"
 
 	"google.golang.org/grpc"
 )
@@ -23,7 +26,40 @@ func (this *Children) SayHello(ctx context.Context, p *person.Person) (*person.P
 }
 
 func main() {
-	RegisterNacos()
+	var wg sync.WaitGroup
+
+	//go serve("47.115.216.190", "192.168.66.146", "47.115.216.190", 8461)
+	//go serve("47.115.216.190", "192.168.66.146", "47.115.216.190", 8462)
+
+	wg.Add(2) // 因为有两个动作，所以增加2个计数
+	go func() {
+		serve("47.115.216.190", "192.168.66.146", "47.115.216.190", 8461)
+		wg.Done() // 操作完成，减少一个计数
+	}()
+	go func() {
+		serve("47.115.216.190", "192.168.66.146", "47.115.216.190", 8462)
+		wg.Done() // 操作完成，减少一个计数
+	}()
+
+	//running()
+	wg.Wait()
+	//serve("47.115.216.190", "192.168.66.146", "47.115.216.190", 8462)
+
+}
+
+func running() {
+	var times int
+	// 构建一个无限循环
+	for {
+		times++
+		//fmt.Println("tick", times)
+		// 延时1秒
+		time.Sleep(time.Second)
+	}
+}
+
+func serve(serverAddr string, localAddr string, npsAddr string, servicePort uint64) {
+	RegisterNacos(serverAddr, npsAddr, servicePort)
 	//////////////////////以下为 grpc 服务远程调用//////////////////////////////
 
 	// 1.初始化 grpc 对象,
@@ -33,21 +69,20 @@ func main() {
 	person.RegisterHelloServer(grpcServer, new(Children))
 
 	// 3.设置监听, 指定 IP/port
-	listener, err := net.Listen("tcp", "192.168.66.148:8801")
+	listener, err := net.Listen("tcp", localAddr+":"+strconv.FormatUint(servicePort, 10))
 	if err != nil {
 		fmt.Println("Listen err:", err)
 		return
 	}
 	defer listener.Close()
 
-	fmt.Println("服务启动... ")
+	fmt.Println(strconv.FormatUint(servicePort, 10) + "服务启动... ")
 
 	// 4. 启动服务
 	grpcServer.Serve(listener)
-
 }
 
-func RegisterNacos() {
+func RegisterNacos(serverAddr string, npsAddr string, servicePort uint64) {
 	// 创建clientConfig
 	clientConfig := constant.ClientConfig{
 		//NamespaceId:         "e525eafa-f7d7-4029-83d9-008937f9d468", // 如果需要支持多namespace，我们可以场景多个client,它们有不同的NamespaceId。当namespace是public时，此处填空字符串。
@@ -57,13 +92,13 @@ func RegisterNacos() {
 		CacheDir:            "/tmp/nacos/cache",
 		//RotateTime:          "1h",
 		//MaxAge:              3,
-		LogLevel:            "debug",
+		LogLevel: "debug",
 	}
 
 	// 至少一个ServerConfig
 	serverConfigs := []constant.ServerConfig{
 		{
-			IpAddr:      "192.168.66.146",
+			IpAddr:      serverAddr,
 			ContextPath: "/nacos",
 			Port:        8848,
 			Scheme:      "http",
@@ -81,16 +116,16 @@ func RegisterNacos() {
 		fmt.Println("clients.NewNamingClient err,", err)
 	}
 	success, err := namingClient.RegisterInstance(vo.RegisterInstanceParam{
-		Ip:          "192.168.66.148",
-		Port:        8801,
+		Ip:          npsAddr,
+		Port:        servicePort,
 		ServiceName: "demo.go",
 		Weight:      10,
 		Enable:      true,
 		Healthy:     true,
 		Ephemeral:   true,
 		Metadata:    map[string]string{"idc": "shanghai"},
-		ClusterName: "cluster-a", // 默认值DEFAULT
-		GroupName:   "group-a",   // 默认值DEFAULT_GROUP
+		ClusterName: "",           // 默认值DEFAULT
+		GroupName:   "group-demo", // 默认值DEFAULT_GROUP
 	})
 	if !success {
 		return
