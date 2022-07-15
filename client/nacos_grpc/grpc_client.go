@@ -16,7 +16,7 @@ type GrpcClient struct {
 	grpcClient    naming_client.INamingClient //nacos-coredns与nacos服务器的grpc连接
 }
 
-func NewGrpcClient(namespaceId string, serverAddr string) *GrpcClient {
+func NewGrpcClient(namespaceId string, serverAddr []string) *GrpcClient {
 	var nacosGrpcClient GrpcClient
 
 	nacosGrpcClient.clientConfig = *constant.NewClientConfig(
@@ -30,8 +30,14 @@ func NewGrpcClient(namespaceId string, serverAddr string) *GrpcClient {
 	//Another way of create serverConfigs
 	nacosGrpcClient.serverConfigs = []constant.ServerConfig{
 		*constant.NewServerConfig(
-			serverAddr,
+			serverAddr[0],
 			8848,
+			constant.WithScheme("http"),
+			constant.WithContextPath("/nacos"),
+		),
+		*constant.NewServerConfig(
+			serverAddr[0],
+			8849,
 			constant.WithScheme("http"),
 			constant.WithContextPath("/nacos"),
 		),
@@ -68,15 +74,13 @@ func (ngc *GrpcClient) GetService(serviceName string, clusters []string) (model.
 	}
 	fmt.Printf("GetService,param:%+v, result: \n\n", param)
 
-	ngc.Subscribe(serviceName, "")
-
 	return service, err
 }
 
 func (ngc *GrpcClient) GetAllServicesInfo() (model.ServiceList, error) {
 	param := vo.GetAllServiceInfoParam{
 		NameSpace: "",  //optional,default:public
-		GroupName: "",  //optional,default:DEFAULT_GROUP
+		GroupName: "group",  //optional,default:DEFAULT_GROUP
 		PageNo:    1,   //optional,default:1
 		PageSize:  100, //optional,default:10
 	}
@@ -90,7 +94,7 @@ func (ngc *GrpcClient) GetAllServicesInfo() (model.ServiceList, error) {
 }
 
 // Subscribe ...
-func (ngc *GrpcClient) Subscribe(serviceName string, groupName string){
+func (ngc *GrpcClient) Subscribe(serviceName string, groupName string) {
 	//Subscribe key=serviceName+groupName+cluster
 	//Note:We call add multiple SubscribeCallback with the same key.
 	param := &vo.SubscribeParam{

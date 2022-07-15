@@ -57,16 +57,19 @@ func UpdateServiceInstance(c *gin.Context) {
 	ip, _ := c.GetQuery("ip")
 	//metadata[idc]=shanghai
 	metadata, _ := c.GetQueryMap("metadata")
+	//enableString, _ := c.GetQuery("enabled")
+
+	//enable, _ := strconv.ParseBool(enableString)
 
 	fmt.Println("getQuery:", ip, metadata)
 	param := vo.UpdateInstanceParam{
 		Ip:          ip, //update ip
 		Port:        8461,
 		ServiceName: "demo.go",
-		GroupName:   "group-demo",
-		ClusterName: "cluster-146",
+		GroupName:   "",
+		ClusterName: "",
 		Weight:      10,
-		Enable:      true,
+		Enable:      false, //
 		Healthy:     true,
 		Ephemeral:   true,
 		Metadata:    metadata, //update metadata
@@ -152,24 +155,6 @@ func SelectOneHealthInstance(c *gin.Context) {
 	c.JSON(http.StatusOK, instance)
 }
 
-func main() {
-	nacosGrpcClient = nacos_grpc.NewGrpcClient("", "47.115.216.190")
-
-	router := gin.Default()
-
-	router.GET("/getService", GetService)
-	router.GET("/getAllServicesInfo", GetAllServicesInfo)
-	router.GET("/subscribe", Subscribe)
-	router.GET("/updateServiceInstance", UpdateServiceInstance)
-	router.GET("/selectOneHealthInstance", SelectOneHealthInstance)
-	router.GET("/selectInstances", SelectInstances)
-	router.GET("/selectAllInstances", SelectAllInstances)
-	router.GET("/allDomNames", AllDomNames)
-	router.GET("/srvIPXT", SrvIPXT)
-
-	router.Run(":8000")
-}
-
 func AllDomNames(c *gin.Context) {
 	services, err := nacosGrpcClient.GetAllServicesInfo()
 	if err != nil {
@@ -189,4 +174,22 @@ func SrvIPXT(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, service)
 	}
 	c.JSON(http.StatusOK, service)
+}
+
+func main() {
+	nacosGrpcClient = nacos_grpc.NewGrpcClient("", []string{"106.52.77.111", "192.168.66.148"})
+
+	router := gin.Default()
+
+	router.GET("/getService", GetService)
+	router.GET("/getAllServicesInfo", GetAllServicesInfo)
+	router.GET("/subscribe", Subscribe)
+	router.GET("/updateServiceInstance", UpdateServiceInstance)
+	router.GET("/selectOneHealthInstance", SelectOneHealthInstance)
+	router.GET("/selectInstances", SelectInstances)
+	router.GET("/selectAllInstances", SelectAllInstances)
+	router.GET("/allDomNames", AllDomNames)
+	router.GET("/srvIPXT", SrvIPXT)
+
+	router.Run(":8000")
 }
