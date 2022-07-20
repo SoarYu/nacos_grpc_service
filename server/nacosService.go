@@ -1,4 +1,4 @@
-package main
+package nacosService
 
 import (
 	"context"
@@ -6,13 +6,10 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/clients"
 	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
-	"nacos_person/pb/person"
+	"google.golang.org/grpc"
+	"nacos-grpc-server/pb/person"
 	"net"
 	"strconv"
-	"sync"
-	"time"
-
-	"google.golang.org/grpc"
 )
 
 // 定义类
@@ -25,41 +22,42 @@ func (this *Children) SayHello(ctx context.Context, p *person.Person) (*person.P
 	return p, nil
 }
 
-func main() {
-	var wg sync.WaitGroup
+//
+//func main() {
+//	var wg sync.WaitGroup
+//
+//	//go serve("47.115.216.190", "192.168.66.146", "47.115.216.190", 8461)
+//	//go serve("47.115.216.190", "192.168.66.146", "47.115.216.190", 8462)
+//
+//	wg.Add(2) // 因为有两个动作，所以增加2个计数
+//	go func() {
+//		serve([]string{"192.168.66.146", "192.168.66.148"}, "192.168.66.146", "106.52.77.111", 8461, "")
+//		wg.Done() // 操作完成，减少一个计数
+//	}()
+//	go func() {
+//		serve([]string{"192.168.66.146", "192.168.66.148"}, "192.168.66.146", "106.52.77.111", 8462, "cluster-146")
+//		wg.Done() // 操作完成，减少一个计数
+//	}()
+//
+//	//running()
+//	wg.Wait()
+//	//serve("47.115.216.190", "192.168.66.146", "47.115.216.190", 8462)
+//
+//}
+//
+//func running() {
+//	var times int
+//	// 构建一个无限循环
+//	for {
+//		times++
+//		//fmt.Println("tick", times)
+//		// 延时1秒
+//		time.Sleep(time.Second)
+//	}
+//}
 
-	//go serve("47.115.216.190", "192.168.66.146", "47.115.216.190", 8461)
-	//go serve("47.115.216.190", "192.168.66.146", "47.115.216.190", 8462)
-
-	wg.Add(2) // 因为有两个动作，所以增加2个计数
-	go func() {
-		serve([]string{"192.168.66.146", "192.168.66.148"}, "192.168.66.148", "192.168.66.148", 8461)
-		wg.Done() // 操作完成，减少一个计数
-	}()
-	go func() {
-		serve([]string{"192.168.66.146", "192.168.66.148"}, "192.168.66.148", "192.168.66.148", 8462)
-		wg.Done() // 操作完成，减少一个计数
-	}()
-
-	//running()
-	wg.Wait()
-	//serve("47.115.216.190", "192.168.66.146", "47.115.216.190", 8462)
-
-}
-
-func running() {
-	var times int
-	// 构建一个无限循环
-	for {
-		times++
-		//fmt.Println("tick", times)
-		// 延时1秒
-		time.Sleep(time.Second)
-	}
-}
-
-func serve(serverAddr []string, localAddr string, npsAddr string, servicePort uint64) {
-	RegisterNacos(serverAddr, npsAddr, servicePort)
+func Serve(serverAddr []string, localAddr string, npsAddr string, servicePort uint64, cluster string) {
+	RegisterNacos(serverAddr, npsAddr, servicePort, cluster)
 	//////////////////////以下为 grpc 服务远程调用//////////////////////////////
 
 	// 1.初始化 grpc 对象,
@@ -82,7 +80,7 @@ func serve(serverAddr []string, localAddr string, npsAddr string, servicePort ui
 	grpcServer.Serve(listener)
 }
 
-func RegisterNacos(serverAddr []string, npsAddr string, servicePort uint64) {
+func RegisterNacos(serverAddr []string, npsAddr string, servicePort uint64, cluster string) {
 	// 创建clientConfig
 	clientConfig := constant.ClientConfig{
 		//NamespaceId:         "e525eafa-f7d7-4029-83d9-008937f9d468", // 如果需要支持多namespace，我们可以场景多个client,它们有不同的NamespaceId。当namespace是public时，此处填空字符串。
@@ -104,7 +102,7 @@ func RegisterNacos(serverAddr []string, npsAddr string, servicePort uint64) {
 			Scheme:      "http",
 		},
 		{
-			IpAddr:      serverAddr[1],
+			IpAddr:      serverAddr[0],
 			ContextPath: "/nacos",
 			Port:        8849,
 			Scheme:      "http",
@@ -130,8 +128,8 @@ func RegisterNacos(serverAddr []string, npsAddr string, servicePort uint64) {
 		Healthy:     true,
 		Ephemeral:   true,
 		Metadata:    map[string]string{"idc": "shanghai"},
-		ClusterName: "",           // 默认值DEFAULT
-		GroupName:   "group-demo", // 默认值DEFAULT_GROUP
+		ClusterName: cluster, // 默认值DEFAULT
+		GroupName:   "",      // 默认值DEFAULT_GROUP11
 	})
 	if !success {
 		return
