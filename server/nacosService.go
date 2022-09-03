@@ -22,39 +22,6 @@ func (this *Children) SayHello(ctx context.Context, p *person.Person) (*person.P
 	return p, nil
 }
 
-//
-//func main() {
-//	var wg sync.WaitGroup
-//
-//	//go serve("47.115.216.190", "192.168.66.146", "47.115.216.190", 8461)
-//	//go serve("47.115.216.190", "192.168.66.146", "47.115.216.190", 8462)
-//
-//	wg.Add(2) // 因为有两个动作，所以增加2个计数
-//	go func() {
-//		serve([]string{"192.168.66.146", "192.168.66.148"}, "192.168.66.146", "106.52.77.111", 8461, "")
-//		wg.Done() // 操作完成，减少一个计数
-//	}()
-//	go func() {
-//		serve([]string{"192.168.66.146", "192.168.66.148"}, "192.168.66.146", "106.52.77.111", 8462, "cluster-146")
-//		wg.Done() // 操作完成，减少一个计数
-//	}()
-//
-//	//running()
-//	wg.Wait()
-//	//serve("47.115.216.190", "192.168.66.146", "47.115.216.190", 8462)
-//
-//}
-//
-//func running() {
-//	var times int
-//	// 构建一个无限循环
-//	for {
-//		times++
-//		//fmt.Println("tick", times)
-//		// 延时1秒
-//		time.Sleep(time.Second)
-//	}
-//}
 
 func Serve(serverAddr []string, localAddr string, npsAddr string, servicePort uint64, cluster string) {
 	RegisterNacos(serverAddr, npsAddr, servicePort, cluster)
@@ -83,7 +50,7 @@ func Serve(serverAddr []string, localAddr string, npsAddr string, servicePort ui
 func RegisterNacos(serverAddr []string, npsAddr string, servicePort uint64, cluster string) {
 	// 创建clientConfig
 	clientConfig := constant.ClientConfig{
-		//NamespaceId:         "e525eafa-f7d7-4029-83d9-008937f9d468", // 如果需要支持多namespace，我们可以场景多个client,它们有不同的NamespaceId。当namespace是public时，此处填空字符串。
+		NamespaceId:         "", // 如果需要支持多namespace，我们可以场景多个client,它们有不同的NamespaceId。当namespace是public时，此处填空字符串。
 		TimeoutMs:           5000,
 		NotLoadCacheAtStart: true,
 		LogDir:              "/tmp/nacos/log",
@@ -94,19 +61,15 @@ func RegisterNacos(serverAddr []string, npsAddr string, servicePort uint64, clus
 	}
 
 	// 至少一个ServerConfig
-	serverConfigs := []constant.ServerConfig{
-		{
-			IpAddr:      serverAddr[0],
-			ContextPath: "/nacos",
-			Port:        8848,
-			Scheme:      "http",
-		},
-		{
-			IpAddr:      serverAddr[0],
-			ContextPath: "/nacos",
-			Port:        8849,
-			Scheme:      "http",
-		},
+	serverConfigs := make([]constant.ServerConfig, len(serverAddr))
+
+	for i, server := range serverAddr {
+		serverConfigs[i] = *constant.NewServerConfig(
+			server,
+			8848,
+			constant.WithScheme("http"),
+			constant.WithContextPath("/nacos"),
+		)
 	}
 
 	// 创建服务发现客户端 (推荐)
