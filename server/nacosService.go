@@ -7,7 +7,7 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 	"google.golang.org/grpc"
-	"nacos-grpc-server/pb/person"
+	"nacos-grpc-service/pb/person"
 	"net"
 	"strconv"
 )
@@ -22,9 +22,8 @@ func (this *Children) SayHello(ctx context.Context, p *person.Person) (*person.P
 	return p, nil
 }
 
-
-func Serve(serverAddr []string, localAddr string, npsAddr string, servicePort uint64, cluster string) {
-	RegisterNacos(serverAddr, npsAddr, servicePort, cluster)
+func Serve(serviceName string, serverAddr []string, localAddr string, npsAddr string, servicePort uint64, cluster string) {
+	RegisterNacos(serviceName, serverAddr, npsAddr, servicePort, cluster)
 	//////////////////////以下为 grpc 服务远程调用//////////////////////////////
 
 	// 1.初始化 grpc 对象,
@@ -47,7 +46,31 @@ func Serve(serverAddr []string, localAddr string, npsAddr string, servicePort ui
 	grpcServer.Serve(listener)
 }
 
-func RegisterNacos(serverAddr []string, npsAddr string, servicePort uint64, cluster string) {
+func ServeNotRegis(localAddr string, servicePort uint64) {
+	// RegisterNacos(serviceName, serverAddr, npsAddr, servicePort, cluster)
+	//////////////////////以下为 grpc 服务远程调用//////////////////////////////
+
+	// 1.初始化 grpc 对象,
+	grpcServer := grpc.NewServer()
+
+	// 2.注册服务
+	person.RegisterHelloServer(grpcServer, new(Children))
+
+	// 3.设置监听, 指定 IP/port
+	listener, err := net.Listen("tcp", localAddr+":"+strconv.FormatUint(servicePort, 10))
+	if err != nil {
+		fmt.Println("Listen err:", err)
+		return
+	}
+	defer listener.Close()
+
+	fmt.Println(strconv.FormatUint(servicePort, 10) + "服务启动... ")
+
+	// 4. 启动服务
+	grpcServer.Serve(listener)
+}
+
+func RegisterNacos(serviceName string, serverAddr []string, npsAddr string, servicePort uint64, cluster string) {
 	// 创建clientConfig
 	clientConfig := constant.ClientConfig{
 		NamespaceId:         "", // 如果需要支持多namespace，我们可以场景多个client,它们有不同的NamespaceId。当namespace是public时，此处填空字符串。
@@ -85,7 +108,7 @@ func RegisterNacos(serverAddr []string, npsAddr string, servicePort uint64, clus
 	success, err := namingClient.RegisterInstance(vo.RegisterInstanceParam{
 		Ip:          npsAddr,
 		Port:        servicePort,
-		ServiceName: "demo.go",
+		ServiceName: serviceName,
 		Weight:      10,
 		Enable:      true,
 		Healthy:     true,
