@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients"
+	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
 	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 	"google.golang.org/grpc"
@@ -11,6 +12,8 @@ import (
 	"net"
 	"strconv"
 )
+
+var NacosClient naming_client.INamingClient
 
 // 定义类
 type Children struct {
@@ -22,8 +25,7 @@ func (this *Children) SayHello(ctx context.Context, p *person.Person) (*person.P
 	return p, nil
 }
 
-func Serve(serviceName string, serverAddr []string, localAddr string, npsAddr string, servicePort uint64, cluster string) {
-	RegisterNacos(serviceName, serverAddr, npsAddr, servicePort, cluster)
+func Serve(localAddr string, servicePort uint64) {
 	//////////////////////以下为 grpc 服务远程调用//////////////////////////////
 
 	// 1.初始化 grpc 对象,
@@ -44,33 +46,10 @@ func Serve(serviceName string, serverAddr []string, localAddr string, npsAddr st
 
 	// 4. 启动服务
 	grpcServer.Serve(listener)
+
 }
 
-func ServeNotRegis(localAddr string, servicePort uint64) {
-	// RegisterNacos(serviceName, serverAddr, npsAddr, servicePort, cluster)
-	//////////////////////以下为 grpc 服务远程调用//////////////////////////////
-
-	// 1.初始化 grpc 对象,
-	grpcServer := grpc.NewServer()
-
-	// 2.注册服务
-	person.RegisterHelloServer(grpcServer, new(Children))
-
-	// 3.设置监听, 指定 IP/port
-	listener, err := net.Listen("tcp", localAddr+":"+strconv.FormatUint(servicePort, 10))
-	if err != nil {
-		fmt.Println("Listen err:", err)
-		return
-	}
-	defer listener.Close()
-
-	fmt.Println(strconv.FormatUint(servicePort, 10) + "服务启动... ")
-
-	// 4. 启动服务
-	grpcServer.Serve(listener)
-}
-
-func RegisterNacos(serviceName string, serverAddr []string, npsAddr string, servicePort uint64, cluster string) {
+func InitNacosClient() {
 	// 创建clientConfig
 	clientConfig := constant.ClientConfig{
 		NamespaceId:         "", // 如果需要支持多namespace，我们可以场景多个client,它们有不同的NamespaceId。当namespace是public时，此处填空字符串。
@@ -84,19 +63,18 @@ func RegisterNacos(serviceName string, serverAddr []string, npsAddr string, serv
 	}
 
 	// 至少一个ServerConfig
-	serverConfigs := make([]constant.ServerConfig, len(serverAddr))
+	serverConfigs := make([]constant.ServerConfig, 1)
 
-	for i, server := range serverAddr {
-		serverConfigs[i] = *constant.NewServerConfig(
-			server,
-			8848,
-			constant.WithScheme("http"),
-			constant.WithContextPath("/nacos"),
-		)
-	}
+	serverConfigs[0] = *constant.NewServerConfig(
+		"106.52.77.111",
+		8848,
+		constant.WithScheme("http"),
+		constant.WithContextPath("/nacos"),
+	)
 
+	var err error
 	// 创建服务发现客户端 (推荐)
-	namingClient, err := clients.NewNamingClient(
+	NacosClient, err = clients.NewNamingClient(
 		vo.NacosClientParam{
 			ClientConfig:  &clientConfig,
 			ServerConfigs: serverConfigs,
@@ -105,8 +83,25 @@ func RegisterNacos(serviceName string, serverAddr []string, npsAddr string, serv
 	if err != nil {
 		fmt.Println("clients.NewNamingClient err,", err)
 	}
-	success, err := namingClient.RegisterInstance(vo.RegisterInstanceParam{
-		Ip:          npsAddr,
+
+}
+
+func DeRegisterNacos(serviceName string, serviceHost string, servicePort uint64) {
+	success, _ := NacosClient.DeregisterInstance(vo.DeregisterInstanceParam{
+		Ip:          serviceHost,
+		Port:        servicePort,
+		ServiceName: serviceName,
+	})
+	if !success {
+		return
+	} else {
+		fmt.Println("namingClient.DeRegisterInstance Success")
+	}
+}
+
+func RegisterNacos(serviceName string, serviceHost string, servicePort uint64) {
+	success, _ := NacosClient.RegisterInstance(vo.RegisterInstanceParam{
+		Ip:          serviceHost,
 		Port:        servicePort,
 		ServiceName: serviceName,
 		Weight:      10,
@@ -114,8 +109,7 @@ func RegisterNacos(serviceName string, serverAddr []string, npsAddr string, serv
 		Healthy:     true,
 		Ephemeral:   true,
 		Metadata:    map[string]string{"idc": "shanghai"},
-		ClusterName: cluster, // 默认值DEFAULT
-		GroupName:   "",      // 默认值DEFAULT_GROUP11
+		GroupName:   "", // 默认值DEFAULT_GROUP11
 	})
 	if !success {
 		return

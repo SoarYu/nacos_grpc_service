@@ -12,6 +12,7 @@ import (
 	"nacos-grpc-service/pb/person"
 	"net"
 	"strconv"
+	// "time"
 )
 
 // 定义类
@@ -25,10 +26,10 @@ func (this *Children) SayHello(ctx context.Context, p *person.Person) (*person.P
 }
 
 func Serve(serviceName string, serverAddr []string, localAddr string, npsAddr string, servicePort uint64, cluster string) {
-	RegisterNacos()
 	//////////////////////以下为 grpc 服务远程调用//////////////////////////////
-
+	// DeRegis(serviceName, serverAddr[0], servicePort)
 	// 1.初始化 grpc 对象,
+
 	grpcServer := grpc.NewServer()
 
 	// 2.注册服务
@@ -46,21 +47,21 @@ func Serve(serviceName string, serverAddr []string, localAddr string, npsAddr st
 
 	// 4. 启动服务
 	grpcServer.Serve(listener)
+
+	// time.Sleep(1 * time.Second)
+
+	//RegisterNacos(serviceName, serverAddr[0], servicePort)
 }
 
-var nacos_client naming_client.INamingClient
+var NacosClient naming_client.INamingClient
 
-func initServerClient() {
+func InitServerClient() naming_client.INamingClient {
 	sc := []constant.ServerConfig{
 		{
 			IpAddr: "106.52.77.111",
 			Port:   8848,
 		},
 	}
-	//or a more graceful way to create ServerConfig
-	// _ = []constant.ServerConfig{
-	// 	*constant.NewServerConfig("console.nacos.io", 80),
-	// }
 
 	cc := constant.ClientConfig{
 		NamespaceId:         "", //namespace id
@@ -72,78 +73,50 @@ func initServerClient() {
 		LogLevel:            "debug",
 		AppendToStdout:      true,
 	}
-	// //or a more graceful way to create ClientConfig
-	// _ = *constant.NewClientConfig(
-	// 	constant.WithNamespaceId(""),
-	// 	constant.WithTimeoutMs(5000),
-	// 	constant.WithNotLoadCacheAtStart(true),
-	// 	constant.WithLogDir("/tmp/nacos/log"),
-	// 	constant.WithCacheDir("/tmp/nacos/cache"),
-	// 	constant.WithLogLevel("debug"),
-	// 	constant.WithLogRollingConfig(&lumberjack.Logger{MaxSize: 10}),
-	// 	constant.WithLogStdout(true),
-	// )
 
 	// a more graceful way to create naming client
-	var err error
-	nacos_client, err = clients.NewNamingClient(
+	//var err error
+	newNacosClient, err := clients.NewNamingClient(
 		vo.NacosClientParam{
 			ClientConfig:  &cc,
 			ServerConfigs: sc,
 		},
 	)
-
 	if err != nil {
 		panic(err)
 	}
+	return newNacosClient
 
 }
 
+func DeRegis(serviceName string, serverAddr string, servicePort uint64) {
+	deparam := vo.DeregisterInstanceParam{
+		Ip:          serverAddr,
+		Port:        servicePort,
+		ServiceName: serviceName,
+		Ephemeral:   true,
+	}
+	deRegisSUCC, _ := NacosClient.DeregisterInstance(deparam)
+	fmt.Printf("RegisterServiceInstance,param:%+v,result:%+v \n\n", deparam, deRegisSUCC)
+}
+
 //func RegisterNacos(serviceName string, serverAddr []string, npsAddr string, servicePort uint64, cluster string) {
-func RegisterNacos() {
+func RegisterNacos(serviceName string, serverAddr string, servicePort uint64) {
 
-	//success, _ := nacos_client.RegisterInstance(vo.RegisterInstanceParam{
-	//	Ip:          npsAddr,
-	//	Port:        servicePort,
-	//	ServiceName: serviceName,
-	//	Weight:      10,
-	//	Enable:      true,
-	//	Healthy:     true,
-	//	Ephemeral:   true,
-	//	Metadata:    map[string]string{"idc": "shanghai"},
-	//	ClusterName: cluster, // 默认值DEFAULT
-	//	GroupName:   "",      // 默认值DEFAULT_GROUP11
-	//})
-
-	//if !success {
-	//	return
-	//} else {
-	//	fmt.Println("namingClient.RegisterInstance Success")
-	//}
-
-	ExampleServiceClient_RegisterServiceInstance(nacos_client, vo.RegisterInstanceParam{
-		Ip:          "106.52.77.111",
-		Port:        8461,
-		ServiceName: "demo.go",
+	param := vo.RegisterInstanceParam{
+		Ip:          serverAddr,
+		Port:        servicePort,
+		ServiceName: serviceName,
 		Weight:      10,
 		Enable:      true,
 		Healthy:     true,
 		Ephemeral:   true,
 		Metadata:    map[string]string{"idc": "shanghai"},
-	})
-}
-
-//
-func ExampleServiceClient_RegisterServiceInstance(client naming_client.INamingClient, param vo.RegisterInstanceParam) {
-	success, _ := client.RegisterInstance(param)
+	}
+	success, _ := NacosClient.RegisterInstance(param)
 	fmt.Printf("RegisterServiceInstance,param:%+v,result:%+v \n\n", param, success)
 }
 
-//
-//func ExampleServiceClient_DeRegisterServiceInstance(client naming_client.INamingClient, param vo.DeregisterInstanceParam) {
-//	success, _ := client.DeregisterInstance(param)
-//	fmt.Printf("DeRegisterServiceInstance,param:%+v,result:%+v \n\n", param, success)
-//}
 //
 //func ExampleServiceClient_GetService(client naming_client.INamingClient, param vo.GetServiceParam) {
 //	service, _ := client.GetService(param)
