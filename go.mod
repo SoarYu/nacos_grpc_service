@@ -8,7 +8,6 @@ require (
 	github.com/nacos-group/nacos-sdk-go v1.1.2
 	github.com/nacos-group/nacos-sdk-go/v2 v2.1.0
 	google.golang.org/grpc v1.49.0
-	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
 
 require (
@@ -49,5 +48,6 @@ require (
 	google.golang.org/genproto v0.0.0-20200825200019-8632dd797987 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/ini.v1 v1.66.2 // indirect
+	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

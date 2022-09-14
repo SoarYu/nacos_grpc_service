@@ -8,7 +8,6 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/vo"
 	"google.golang.org/grpc"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"nacos-grpc-service/pb/person"
 	"net"
 	"strconv"
@@ -27,9 +26,7 @@ func (this *Children) SayHello(ctx context.Context, p *person.Person) (*person.P
 
 func Serve(serviceName string, serverAddr []string, localAddr string, npsAddr string, servicePort uint64, cluster string) {
 	//////////////////////以下为 grpc 服务远程调用//////////////////////////////
-	// DeRegis(serviceName, serverAddr[0], servicePort)
 	// 1.初始化 grpc 对象,
-
 	grpcServer := grpc.NewServer()
 
 	// 2.注册服务
@@ -48,14 +45,11 @@ func Serve(serviceName string, serverAddr []string, localAddr string, npsAddr st
 	// 4. 启动服务
 	grpcServer.Serve(listener)
 
-	// time.Sleep(1 * time.Second)
-
-	//RegisterNacos(serviceName, serverAddr[0], servicePort)
 }
 
 var NacosClient naming_client.INamingClient
 
-func InitServerClient() naming_client.INamingClient {
+func InitServerClient() {
 	sc := []constant.ServerConfig{
 		{
 			IpAddr: "106.52.77.111",
@@ -76,7 +70,7 @@ func InitServerClient() naming_client.INamingClient {
 
 	// a more graceful way to create naming client
 	//var err error
-	newNacosClient, err := clients.NewNamingClient(
+	NacosClient, err := clients.NewNamingClient(
 		vo.NacosClientParam{
 			ClientConfig:  &cc,
 			ServerConfigs: sc,
@@ -85,11 +79,10 @@ func InitServerClient() naming_client.INamingClient {
 	if err != nil {
 		panic(err)
 	}
-	return newNacosClient
 
 }
 
-func DeRegis(serviceName string, serverAddr string, servicePort uint64) {
+func DeRegisterNacos(serviceName string, serverAddr string, servicePort uint64) {
 	deparam := vo.DeregisterInstanceParam{
 		Ip:          serverAddr,
 		Port:        servicePort,
@@ -116,37 +109,3 @@ func RegisterNacos(serviceName string, serverAddr string, servicePort uint64) {
 	success, _ := NacosClient.RegisterInstance(param)
 	fmt.Printf("RegisterServiceInstance,param:%+v,result:%+v \n\n", param, success)
 }
-
-//
-//func ExampleServiceClient_GetService(client naming_client.INamingClient, param vo.GetServiceParam) {
-//	service, _ := client.GetService(param)
-//	fmt.Printf("GetService,param:%+v, result:%+v \n\n", param, service)
-//}
-//
-//func ExampleServiceClient_SelectAllInstances(client naming_client.INamingClient, param vo.SelectAllInstancesParam) {
-//	instances, _ := client.SelectAllInstances(param)
-//	fmt.Printf("SelectAllInstance,param:%+v, result:%+v \n\n", param, instances)
-//}
-//
-//func ExampleServiceClient_SelectInstances(client naming_client.INamingClient, param vo.SelectInstancesParam) {
-//	instances, _ := client.SelectInstances(param)
-//	fmt.Printf("SelectInstances,param:%+v, result:%+v \n\n", param, instances)
-//}
-//
-//func ExampleServiceClient_SelectOneHealthyInstance(client naming_client.INamingClient, param vo.SelectOneHealthInstanceParam) {
-//	instances, _ := client.SelectOneHealthyInstance(param)
-//	fmt.Printf("SelectInstances,param:%+v, result:%+v \n\n", param, instances)
-//}
-//
-//func ExampleServiceClient_Subscribe(client naming_client.INamingClient, param *vo.SubscribeParam) {
-//	client.Subscribe(param)
-//}
-//
-//func ExampleServiceClient_UnSubscribe(client naming_client.INamingClient, param *vo.SubscribeParam) {
-//	client.Unsubscribe(param)
-//}
-//
-//func ExampleServiceClient_GetAllService(client naming_client.INamingClient, param vo.GetAllServiceInfoParam) {
-//	service, _ := client.GetAllServicesInfo(param)
-//	fmt.Printf("GetAllService,param:%+v, result:%+v \n\n", param, service)
-//}
