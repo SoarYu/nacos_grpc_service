@@ -11,6 +11,7 @@ import (
 	"nacos-grpc-service/pb/person"
 	"net"
 	"strconv"
+	"strings"
 )
 
 var NacosClient naming_client.INamingClient
@@ -49,7 +50,7 @@ func Serve(localAddr string, servicePort uint64) {
 
 }
 
-func InitNacosClient() {
+func InitNacosClient(serverHosts []string) {
 	// 创建clientConfig
 	clientConfig := constant.ClientConfig{
 		NamespaceId:         "", // 如果需要支持多namespace，我们可以场景多个client,它们有不同的NamespaceId。当namespace是public时，此处填空字符串。
@@ -57,20 +58,25 @@ func InitNacosClient() {
 		NotLoadCacheAtStart: true,
 		LogDir:              "/tmp/nacos/log",
 		CacheDir:            "/tmp/nacos/cache",
-		//RotateTime:          "1h",
-		//MaxAge:              3,
-		LogLevel: "debug",
+		LogLevel:            "debug",
 	}
 
 	// 至少一个ServerConfig
-	serverConfigs := make([]constant.ServerConfig, 1)
+	serverConfigs := make([]constant.ServerConfig, len(serverHosts))
 
-	serverConfigs[0] = *constant.NewServerConfig(
-		"106.52.77.111",
-		8848,
-		constant.WithScheme("http"),
-		constant.WithContextPath("/nacos"),
-	)
+	for i, serverHost := range serverHosts {
+		serverIp := strings.Split(serverHost, ":")[0]
+		serverPort, err := strconv.Atoi(strings.Split(serverHost, ":")[1])
+		if err != nil {
+			fmt.Errorf("nacos server host config error!", err)
+		}
+		serverConfigs[i] = *constant.NewServerConfig(
+			serverIp,
+			uint64(serverPort),
+			constant.WithScheme("http"),
+			constant.WithContextPath("/nacos"),
+		)
+	}
 
 	var err error
 	// 创建服务发现客户端 (推荐)
@@ -114,6 +120,6 @@ func RegisterNacos(serviceName string, serviceHost string, servicePort uint64) {
 	if !success {
 		return
 	} else {
-		fmt.Println("namingClient.RegisterInstance Success")
+		fmt.Println("服务： " + serviceName + " 注册成功！")
 	}
 }
