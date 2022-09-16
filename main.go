@@ -9,6 +9,7 @@ import (
 	NacosService "nacos-grpc-service/server"
 	"strconv"
 	"sync"
+	"time"
 )
 
 var (
@@ -31,6 +32,8 @@ func main() {
 		go NacosService.Serve(serviceName, serviceHost, servicePort)
 		wg.Done() // 操作完成，减少一个计数
 	}
+
+	time.Sleep(3 * time.Second)
 
 	////SelectAllInstance可以返回全部实例列表,包括healthy=false,enable=false,weight<=0
 	instances, _ := NacosClient.SelectAllInstances(serviceName)

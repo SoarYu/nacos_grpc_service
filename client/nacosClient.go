@@ -82,7 +82,6 @@ func RegisterNacos(serviceName string, serviceHost string, servicePort uint64) {
 	})
 	if !success {
 		fmt.Println("服务： " + serviceName + " 注册失败！")
-		return
 	} else {
 		fmt.Println("服务： " + serviceName + " 注册成功！")
 	}
@@ -91,7 +90,6 @@ func SelectAllInstances(serviceName string) ([]model.Instance, error) {
 	return NacosClient.SelectAllInstances(vo.SelectAllInstancesParam{
 		ServiceName: serviceName,
 	})
-	//return instances
 }
 func SelectOneHealthyInstance(serviceName string) (*model.Instance, error) {
 	return NacosClient.SelectOneHealthyInstance(vo.SelectOneHealthInstanceParam{

@@ -22,7 +22,7 @@ func (this *Children) SayHello(ctx context.Context, p *person.Person) (*person.P
 
 func Serve(serviceName string, serviceHost string, servicePort uint64) {
 	//////////////////////以下为 grpc 服务远程调用//////////////////////////////
-	//NacosClient.DeRegisterNacos(serviceName, serviceHost, servicePort)
+	NacosClient.DeRegisterNacos(serviceName, serviceHost, servicePort)
 	// 1.初始化 grpc 对象,
 	grpcServer := grpc.NewServer()
 
