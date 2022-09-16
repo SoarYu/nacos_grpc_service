@@ -41,6 +41,7 @@ func InitNacosClient(serverHosts []string) {
 		)
 	}
 
+	// a more graceful way to create naming client
 	var err error
 	// 创建服务发现客户端 (推荐)
 	NacosClient, err = clients.NewNamingClient(
@@ -49,8 +50,11 @@ func InitNacosClient(serverHosts []string) {
 			ServerConfigs: serverConfigs,
 		},
 	)
+
 	if err != nil {
 		fmt.Println("clients.NewNamingClient err,", err)
+	} else {
+		fmt.Println("clients.NewNamingClient success")
 	}
 
 }
