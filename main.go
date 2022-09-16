@@ -37,13 +37,14 @@ func main() {
 
 	////SelectAllInstance可以返回全部实例列表,包括healthy=false,enable=false,weight<=0
 	instances, _ := NacosClient.SelectAllInstances(serviceName)
-	//
 	fmt.Println(instances)
-	//// SelectOneHealthyInstance将会按加权随机轮询的负载均衡策略返回一个健康的实例
-	//// 实例必须满足的条件：health=true,enable=true and weight>0
-	instance, _ := NacosClient.SelectOneHealthyInstance(serviceName)
 
 	for i := 0; i < count; i++ {
+
+		//// SelectOneHealthyInstance将会按加权随机轮询的负载均衡策略返回一个健康的实例
+		//// 实例必须满足的条件：health=true,enable=true and weight>0
+		instance, _ := NacosClient.SelectOneHealthyInstance(serviceName)
+
 		addr := instance.Ip + ":" + strconv.Itoa(int(instance.Port))
 		fmt.Println(addr)
 		//////////////////////以下为 grpc 服务远程调用//////////////////////////////
